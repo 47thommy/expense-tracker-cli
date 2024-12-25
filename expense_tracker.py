@@ -2,6 +2,7 @@ import cmd
 from argparse import ArgumentParser
 import json
 import datetime
+import shlex
 
 
 class Expense:
@@ -70,7 +71,7 @@ class ExpenseTrackerCLI(cmd.Cmd):
         )
 
         try:
-            parsed_args = parser.parse_args(args.split())
+            parsed_args = parser.parse_args(shlex.split(args))
             description = parsed_args.description.strip().strip('"').strip("'")
             amount = parsed_args.amount
             necessary = parsed_args.necessary

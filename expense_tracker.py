@@ -21,6 +21,8 @@ class Expense:
             "description": self.desctiption,
             "amount": self.amount,
             "necessary": self.necessary,
+            "createdAt": self.createdAt,
+            "updatedAt": self.updatedAt,
         }
 
 
@@ -34,8 +36,10 @@ class ExpenseTrackerCLI(cmd.Cmd):
                 json.dump(data, write_file)
         except json.JSONDecodeError:
             print("Error Writing to expenses, the expense.json file is corrupted")
+            return
         except FileNotFoundError:
             print("the expenses.json file does not exist")
+            return
 
     def get_all_expenses(self) -> list:
         """retrieves all expenses from expenses.json"""
@@ -53,6 +57,24 @@ class ExpenseTrackerCLI(cmd.Cmd):
 
     def get_next_id(self, expenses):
         return max((expense["id"] for expense in expenses), default=0) + 1
+
+    def format_expenses(self, expenses: list) -> None:
+        """Formats a list of expenses into a table and prints the table"""
+        if not expenses:
+            return "No expenses found."
+
+        # Header for the table
+        table = f"{'ID':<5}{'Date':<12}{'Description':<40}{'Amount':<10}\n"
+        table += "-" * 77 + "\n"
+
+        # Format each expense
+        for expense in expenses:
+            expense_date = datetime.datetime.fromisoformat(
+                expense["createdAt"]
+            ).strftime("%Y-%m-%d")
+            table += f"{expense['id']:<5}{str(expense_date):<12}{expense['description']:<40}${expense['amount']:<10}\n"
+
+        print(table)
 
     def do_add(self, args):
         """adds a new expense"""
@@ -85,6 +107,11 @@ class ExpenseTrackerCLI(cmd.Cmd):
             print(f"Expense {description} added sucessfully")
         except SystemExit:
             pass  # prevent argparse from exiting the program
+
+    def do_list(self, line):
+        """lists all expenses"""
+        expenses = self.get_all_expenses()
+        self.format_expenses(expenses)
 
     def do_exit(self, line):
         """command to exit the cli"""

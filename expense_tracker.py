@@ -39,6 +39,7 @@ class ExpenseTrackerCLI(cmd.Cmd):
     def __init__(self, completekey="tab", stdin=None, stdout=None):
         super().__init__(completekey, stdin, stdout)
         self.llm = ChatOpenAI(api_key=api_key, model="gpt-4o-mini")
+        self.current_year = datetime.datetime.now().year
 
     def summarizer(self, expenses):
         """summarizes expenses"""
@@ -137,9 +138,10 @@ class ExpenseTrackerCLI(cmd.Cmd):
         )
         try:
             parsed_args = parser.parse_args(shlex.split(args))
-            month = int(parsed_args.month)
+            month = parsed_args.month
             expenses = self.get_all_expenses()
             if month:
+                month = int(month)
                 expenses = [
                     expense
                     for expense in expenses
@@ -149,7 +151,16 @@ class ExpenseTrackerCLI(cmd.Cmd):
                         )
                     )
                     == month
+                    and datetime.datetime.fromisoformat(expense["createdAt"]).year
+                    == self.current_year
                 ]
+                if not expenses:
+                    print(
+                        f"you have no expenses at the specified month of year {self.current_year}"
+                    )
+                    return
+            if not expenses:
+                print("you have no expenses to summarize")
             summary = self.summarizer(expenses)
             print(summary)
         except SystemExit:

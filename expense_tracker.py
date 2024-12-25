@@ -5,6 +5,7 @@ import datetime
 import shlex
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
+import pandas as pd
 
 load_dotenv()
 import os
@@ -191,6 +192,19 @@ class ExpenseTrackerCLI(cmd.Cmd):
             print(f"expense with {id} id deleted succesfully")
         except SystemExit:
             pass  # prevent argparse from exiting the cli
+
+    def do_export_csv(self, line):
+        """exports expenses as a csv"""
+        expenses = self.get_all_expenses()
+        if not expenses:
+            print("No expenses to export.")
+            return
+        try:
+            df = pd.DataFrame(expenses)
+            df.to_csv("report.csv", index=False)
+            print(f"Expenses exported to csv:report.csv")
+        except Exception as e:
+            print(f"Error:{e}")
 
     def do_exit(self, line):
         """command to exit the cli"""

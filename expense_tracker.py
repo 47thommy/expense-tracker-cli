@@ -19,7 +19,6 @@ class Expense:
         self.amount = amount
         self.necessary = necessary
         self.createdAt = datetime.datetime.now().isoformat()
-        self.updatedAt = self.createdAt
 
     def to_dict(self) -> dict:
         """converts the expense object to dict"""
@@ -130,11 +129,31 @@ class ExpenseTrackerCLI(cmd.Cmd):
         expenses = self.get_all_expenses()
         self.format_expenses(expenses)
 
-    def do_summary(self, line):
+    def do_summary(self, args):
         """summarizes all expenses"""
-        expenses = self.get_all_expenses()
-        summary = self.summarizer(expenses)
-        print(summary)
+        parser = ArgumentParser(description="Summarize an expense for a specific month")
+        parser.add_argument(
+            "--month", "-m", help="Month of the current year to do summarization"
+        )
+        try:
+            parsed_args = parser.parse_args(shlex.split(args))
+            month = int(parsed_args.month)
+            expenses = self.get_all_expenses()
+            if month:
+                expenses = [
+                    expense
+                    for expense in expenses
+                    if int(
+                        datetime.datetime.fromisoformat(expense["createdAt"]).strftime(
+                            "%m"
+                        )
+                    )
+                    == month
+                ]
+            summary = self.summarizer(expenses)
+            print(summary)
+        except SystemExit:
+            pass  # prevent argparse from exiting the cli
 
     def do_delete(self, args):
         """deletes an expense"""

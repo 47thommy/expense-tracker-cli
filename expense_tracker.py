@@ -3,6 +3,13 @@ from argparse import ArgumentParser
 import json
 import datetime
 import shlex
+from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+
+load_dotenv()
+import os
+
+api_key = os.getenv("OPENAI_API_KEY")
 
 
 class Expense:
@@ -29,6 +36,16 @@ class Expense:
 class ExpenseTrackerCLI(cmd.Cmd):
     prompt = "expense_tracker>>"
     intro = "Welcome to ExpenseTrackerCLI. type 'help' to see all available commans"
+
+    def __init__(self, completekey="tab", stdin=None, stdout=None):
+        super().__init__(completekey, stdin, stdout)
+        self.llm = ChatOpenAI(api_key=api_key, model="gpt-4o-mini")
+
+    def summarizer(self, expenses):
+        """summarizes expenses"""
+        message = f"summerize the following expense data: {expenses}. your response should be in a readable format which will be displayed on a terminal"
+        response = self.llm.invoke(message)
+        return response.content
 
     def write_to_json_file(self, data):
         try:
@@ -112,6 +129,12 @@ class ExpenseTrackerCLI(cmd.Cmd):
         """lists all expenses"""
         expenses = self.get_all_expenses()
         self.format_expenses(expenses)
+
+    def do_summary(self, line):
+        """summarizes all expenses"""
+        expenses = self.get_all_expenses()
+        summary = self.summarizer(expenses)
+        print(summary)
 
     def do_exit(self, line):
         """command to exit the cli"""

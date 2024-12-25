@@ -136,6 +136,32 @@ class ExpenseTrackerCLI(cmd.Cmd):
         summary = self.summarizer(expenses)
         print(summary)
 
+    def do_delete(self, args):
+        """deletes an expense"""
+
+        parser = ArgumentParser(description="remove an expense from the tracker")
+        parser.add_argument(
+            "--id",
+            "-i",
+            required=True,
+            help="Deletes an expense from the expense tracker",
+        )
+
+        try:
+            parsed_args = parser.parse_args(shlex.split(args))
+            id = int(parsed_args.id)
+            expenses = self.get_all_expenses()
+            initial_count = len(expenses)
+
+            expenses = [expense for expense in expenses if expense["id"] != id]
+            if initial_count == len(expenses):
+                print(f"No expense with {id} id found")
+                return
+            self.write_to_json_file(expenses)
+            print(f"expense with {id} id deleted succesfully")
+        except SystemExit:
+            pass  # prevent argparse from exiting the cli
+
     def do_exit(self, line):
         """command to exit the cli"""
         print("Goodbye")

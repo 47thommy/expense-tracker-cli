@@ -10,13 +10,11 @@ import pandas as pd
 load_dotenv()
 import os
 
-api_key = os.getenv("OPENAI_API_KEY")
-
 
 class Expense:
-    def __init__(self, id, description, amount, necessary):
+    def __init__(self, id: int, description: str, amount: int, necessary: bool):
         self.id = id
-        self.desctiption = description
+        self.description = description
         self.amount = amount
         self.necessary = necessary
         self.createdAt = datetime.datetime.now().isoformat()
@@ -25,11 +23,10 @@ class Expense:
         """converts the expense object to dict"""
         return {
             "id": self.id,
-            "description": self.desctiption,
+            "description": self.description,
             "amount": self.amount,
             "necessary": self.necessary,
             "createdAt": self.createdAt,
-            "updatedAt": self.updatedAt,
         }
 
 
@@ -39,7 +36,10 @@ class ExpenseTrackerCLI(cmd.Cmd):
 
     def __init__(self, completekey="tab", stdin=None, stdout=None):
         super().__init__(completekey, stdin, stdout)
-        self.llm = ChatOpenAI(api_key=api_key, model="gpt-4o-mini")
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        self.llm = ChatOpenAI(api_key=self.api_key, model="gpt-4o-mini")
         self.current_year = datetime.datetime.now().year
 
     def summarizer(self, expenses):
@@ -162,6 +162,7 @@ class ExpenseTrackerCLI(cmd.Cmd):
                     return
             if not expenses:
                 print("you have no expenses to summarize")
+
             summary = self.summarizer(expenses)
             print(summary)
         except SystemExit:
@@ -181,12 +182,18 @@ class ExpenseTrackerCLI(cmd.Cmd):
         try:
             parsed_args = parser.parse_args(shlex.split(args))
             id = int(parsed_args.id)
+            confirmation = input(
+                f"Are you sure you want to delete expense ID {id}? (y/n):"
+            )
+            if confirmation.lower() != "y":
+                print("Deletion Cancelled")
+                return
             expenses = self.get_all_expenses()
             initial_count = len(expenses)
 
             expenses = [expense for expense in expenses if expense["id"] != id]
             if initial_count == len(expenses):
-                print(f"No expense with {id} id found")
+                print(f"No expense with id {id} found")
                 return
             self.write_to_json_file(expenses)
             print(f"expense with {id} id deleted succesfully")

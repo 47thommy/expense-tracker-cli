@@ -37,16 +37,26 @@ class ExpenseTrackerCLI(cmd.Cmd):
     def __init__(self, completekey="tab", stdin=None, stdout=None):
         super().__init__(completekey, stdin, stdout)
         self.api_key = os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
-        self.llm = ChatOpenAI(api_key=self.api_key, model="gpt-4o-mini")
+        self.ai_summary = True
+        try:
+            self.llm = ChatOpenAI(api_key=self.api_key, model="gpt-4o-mini")
+        except Exception as e:
+            print(f"Error connecting to openai: {e}")
+            print("All summaries will only summarize amount spent ")
+            self.ai_summary = False
+            pass
         self.current_year = datetime.datetime.now().year
 
     def summarizer(self, expenses):
         """summarizes expenses"""
-        message = f"summerize the following expense data: {expenses}. your response should be in a readable format which will be displayed on a terminal"
-        response = self.llm.invoke(message)
-        return response.content
+        if self.ai_summary:
+            print("summarizing expenses...")
+            message = f"summerize the following expense data: {expenses}. your response should be in a readable format which will be displayed on a terminal"
+            response = self.llm.invoke(message)
+            return response.content
+        else:
+            total = sum((int(expense["amount"]) for expense in expenses))
+            return f"Total expenses: {total}"
 
     def write_to_json_file(self, data):
         try:
